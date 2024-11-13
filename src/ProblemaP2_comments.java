@@ -41,6 +41,7 @@ public class ProblemaP2 {
 				
 				int id = Integer.parseInt(campos[0]);
 				int x = Integer.parseInt(campos[1]);
+				//System.out.println("estoy leyendo id "+id+" x: "+x);
 				int y = Integer.parseInt(campos[2]);
 				int tipo = Integer.parseInt(campos[3]);
 				HashSet<Integer> peptidosCelula = new HashSet<>();
@@ -69,22 +70,35 @@ public class ProblemaP2 {
 	}
 	
 	private static boolean bfs(DirectedWeightedGraph residual, int source, int sumidero, int[] parent) {
+		//System.out.println("mi tamaño del residual es: "+sizeresidual);
 		parent[source]=-1;
 		boolean[] visitados = new boolean[sumidero+1];
 		visitados[source]=true;
+		//HashMap<Integer, Boolean> visitados = new HashMap<Integer, Boolean>();
 		Queue<Integer> cola = new LinkedList<>();
 		cola.add(source);
-
+		
+		//for (int i: residual.getSet()) {
+		//    visitados[i]=false;
+		//}
+		
 		while(!cola.isEmpty()) {
 			int u = cola.poll();
 			for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
 				int v = edge.getDest();
-	
+				//System.out.println("bfs ya lo visite: "+visitados.getOrDefault(v,false));
+				//System.out.println("bfs mi peso: "+edge.getWeight());
+				//System.out.println("bfs mi flow: "+edge.getFlow());
+
 				if(!visitados[v] && (edge.getWeight() - edge.getFlow() > 0)) {
 					parent[v]=u;
+					//parent.put(v, u);
+					//visitados.put(v, true);
 					visitados[v]=true;
 					cola.add(v);
+					//System.out.println("bfs v: "+v+" bfs sumidero: "+sumidero);
 					if (v == sumidero) {
+						//System.out.println("bfs encontro true");
 						return true;
 					}
 				}
@@ -94,24 +108,36 @@ public class ProblemaP2 {
 	}
 	
 	private static boolean[] bfsResidual(DirectedWeightedGraph residual, int source, int sumidero, int[] parent) {
+		//System.out.println("mi tamaño del residual es: "+sizeresidual);
 		parent[source]=-1;
 		boolean[] visitados = new boolean[sumidero+1];
 		Arrays.fill(visitados, false);
 		visitados[source]=true;
+		//HashMap<Integer, Boolean> visitados = new HashMap<Integer, Boolean>();
 		Queue<Integer> cola = new LinkedList<>();
 		cola.add(source);
-	
+		
+		//for (int i: residual.getSet()) {
+		//    visitados[i]=false;
+		//}
+		
 		while(!cola.isEmpty()) {
 			int u = cola.poll();
 			for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
 				int v = edge.getDest();
+				//System.out.println("bfs ya lo visite: "+visitados.getOrDefault(v,false));
+				//System.out.println("bfs mi peso: "+edge.getWeight());
+				//System.out.println("bfs mi flow: "+edge.getFlow());
 
 				if(!visitados[v] && (edge.getWeight() - edge.getFlow() > 0)) {
 					parent[v]=u;
-
+					//parent.put(v, u);
+					//visitados.put(v, true);
 					visitados[v]=true;
 					cola.add(v);
+					//System.out.println("bfs v: "+v+" bfs sumidero: "+sumidero);
 					if (v == sumidero) {
+						//System.out.println("bfs encontro true");
 						return visitados;
 					}
 				}
@@ -119,41 +145,46 @@ public class ProblemaP2 {
 		}
 		return visitados;
 	}
-		
-	private static DirectedWeightedGraph crearResidual(DirectedWeightedGraph red) {
+	
+	/*
+	private static DirectedWeightedGraph crearResidualBloqueo(DirectedWeightedGraph red, int bloqueado) {
 		DirectedWeightedGraph residual = new DirectedWeightedGraph();
-		for (int nodo: red.getSet()) {
-			for(DirectedWeightedEdge edge : red.getAdjacents(nodo)) {
+		for (int source: red.getSet()) {
+			if (source==bloqueado) continue;
+			for(DirectedWeightedEdge edge : red.getAdjacents(source)) {
 				int dest = edge.getDest();
-				residual.addEdge(nodo,dest,edge.getWeight());
-				residual.addEdge(dest, nodo, 0);
+				if(dest==bloqueado) continue;
+				residual.addEdge(source,dest,edge.getWeight());
+				residual.addEdge(dest, source, 0);
 			}
 		}
 		return residual;
 	}
+	*/
 	
-	private static int[] edmonsKarpNodoMaximoFlujo(DirectedWeightedGraph red, HashMap<Integer, celula> celulas ) {
-		int[] answer = new int[3];
-		int maxNode = 0;
-		int maxCrossFlow = Integer.MIN_VALUE;
+	/*
+	private static int edmonsKarpBloqueo(DirectedWeightedGraph red, int bloqueado) {
 		int source = 0;
 		int sumidero = red.getSize();
+		//System.out.println("bloqueado: "+bloqueado);
 		int flujo = 0;
-		DirectedWeightedGraph residual = crearResidual(red);
+		DirectedWeightedGraph residual = crearResidualBloqueo(red, bloqueado);
 		int[] parent = new int[red.getSize()+1];
-
-		while(bfs(residual, source, sumidero, parent)) {
+		//HashMap<Integer,Integer>parent = new HashMap<Integer,Integer>();
+		
+		while(bfs(residual,source,sumidero,parent)) {
 			int pathFlow = Integer.MAX_VALUE;
 			int v = sumidero;
+			
 			while(v != source) {
-				
 				int u = parent[v];
-				int capacity = 0;
+				int capacity = Integer.MAX_VALUE;
 				int flow = 0;
 				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
-					if(edge.getDest() == v) {
+					if(edge.getDest()==v) {
 						capacity = edge.getWeight();
-						flow = edge.getFlow();					}
+						flow = edge.getFlow();
+					}
 				}
 				pathFlow = Math.min(pathFlow, capacity-flow);
 				v=u;
@@ -180,6 +211,146 @@ public class ProblemaP2 {
 			}
 			
 			flujo += pathFlow;
+		}	
+ 		return flujo;
+	}
+	*/
+	
+	private static DirectedWeightedGraph crearResidual(DirectedWeightedGraph red) {
+		DirectedWeightedGraph residual = new DirectedWeightedGraph();
+		for (int nodo: red.getSet()) {
+			for(DirectedWeightedEdge edge : red.getAdjacents(nodo)) {
+				int dest = edge.getDest();
+				//System.out.println("destino: "+ dest+ " peso: "+edge.getWeight());
+				residual.addEdge(nodo,dest,edge.getWeight());
+				residual.addEdge(dest, nodo, 0);
+			}
+		}
+		return residual;
+	}
+	
+	/*
+	private static int edmonsKarp(DirectedWeightedGraph red) {
+		int source = 0;
+		int sumidero = red.getSize();
+		//System.out.println("sumidero sin bloqueo: "+sumidero);
+		int flujo = 0;
+		DirectedWeightedGraph residual = crearResidual(red);
+		//System.out.println("size de grafo residual en iteración :"+residual.getSize()+" size grafo: "+red.getSize());
+		int[] parent = new int[red.getSize()+1];
+		//HashMap<Integer,Integer> parent = new HashMap<Integer,Integer>();
+
+		while(bfs(residual, source, sumidero, parent)) {
+			//System.out.println("entre a while ek");
+			int pathFlow = Integer.MAX_VALUE;
+			int v = sumidero;
+			//System.out.println("v en edmons karp interación: "+Integer.toString(v));
+			while(v != source) {
+				//System.out.println("v en iteracion ek: "+ v);
+				
+				int u = parent[v];
+				int capacity = 0;
+				int flow = 0;
+				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+					//System.out.println("edge en iteracion ek: "+ edge.getDest());
+					if(edge.getDest() == v) {
+						capacity = edge.getWeight();
+						flow = edge.getFlow();
+						//System.out.println("flow en iteración ek: "+flow);
+					}
+				}
+				pathFlow = Math.min(pathFlow, capacity-flow);
+				v=u;
+			}
+			
+			v = sumidero;
+			while(v!=source) {
+				int u = parent[v];
+				
+				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+					if(edge.getDest()==v) {
+						edge.setFlow(edge.getFlow()+pathFlow);
+					}
+				}
+				
+				for (DirectedWeightedEdge edge: residual.getAdjacents(v)) {
+					if(edge.getDest()==u) {
+						edge.setFlow(edge.getFlow()-pathFlow);
+					}
+				}
+				
+				v=u;
+				
+			}
+			
+			//HashMap<Integer>
+			
+			flujo += pathFlow;
+		}	
+ 		return flujo;
+	}
+	*/
+	
+	private static int[] edmonsKarpNodoMaximoFlujo(DirectedWeightedGraph red, HashMap<Integer, celula> celulas ) {
+		int[] answer = new int[3];
+		int maxNode = 0;
+		int maxCrossFlow = Integer.MIN_VALUE;
+		HashMap<Integer, Integer> flujoNodos = new HashMap<Integer, Integer>();
+
+		int source = 0;
+		int sumidero = red.getSize();
+		//System.out.println("sumidero sin bloqueo: "+sumidero);
+		int flujo = 0;
+		DirectedWeightedGraph residual = crearResidual(red);
+		//System.out.println("size de grafo residual en iteración :"+residual.getSize()+" size grafo: "+red.getSize());
+		int[] parent = new int[red.getSize()+1];
+		//HashMap<Integer,Integer> parent = new HashMap<Integer,Integer>();
+
+		while(bfs(residual, source, sumidero, parent)) {
+			//System.out.println("entre a while ek");
+			int pathFlow = Integer.MAX_VALUE;
+			int v = sumidero;
+			//System.out.println("v en edmons karp interación: "+Integer.toString(v));
+			while(v != source) {
+				//System.out.println("v en iteracion ek: "+ v);
+				
+				int u = parent[v];
+				int capacity = 0;
+				int flow = 0;
+				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+					//System.out.println("edge en iteracion ek: "+ edge.getDest());
+					if(edge.getDest() == v) {
+						capacity = edge.getWeight();
+						flow = edge.getFlow();
+						//System.out.println("flow en iteración ek: "+flow);
+					}
+				}
+				pathFlow = Math.min(pathFlow, capacity-flow);
+				v=u;
+			}
+			
+			v = sumidero;
+			while(v!=source) {
+				int u = parent[v];
+				
+				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+					if(edge.getDest()==v) {
+						edge.setFlow(edge.getFlow()+pathFlow);
+					}
+				}
+				
+				for (DirectedWeightedEdge edge: residual.getAdjacents(v)) {
+					if(edge.getDest()==u) {
+						edge.setFlow(edge.getFlow()-pathFlow);
+					}
+				}
+				
+				v=u;
+				
+			}
+			
+			
+			flujo += pathFlow;
 			
 			HashMap<Integer,ArrayList<DirectedWeightedEdge>> crossing = new HashMap<Integer,ArrayList<DirectedWeightedEdge>>();
 			HashMap<Integer, Integer> crossingFlows = new HashMap<Integer, Integer>();
@@ -195,15 +366,43 @@ public class ProblemaP2 {
 				        if (crossingFlows.getOrDefault(o,Integer.MIN_VALUE)>=maxCrossFlow) {
 				        	if (celulas.containsKey(p.getDest())){
 					        	maxCrossFlow = crossingFlows.getOrDefault(o,Integer.MIN_VALUE);
+					        	//if (!celulas.containsKey(p.getDest())) anterior=parent[p.getDest()];
 					        	int tipo = celulas.get(p.getDest()).getTipo();
 					        	anterior=parent[p.getDest()];
+					        	//System.out.println("el p es: "+p.getDest()+" y su crossing flow: "+maxCrossFlow+" anterior "+anterior+" su tipo es "+tipo);
 					        	maxNode = p.getDest();
 					        	if (tipo!=2) maxNode=anterior;
-				        	}
 				        }
+				        }
+					// if   (!flujoNodos.containsKey(p.getDest())) {
+						//flujoNodos.put(p.getDest(), p.getFlow());
+				//	}
+					//else {
+						//int actual = flujoNodos.get(p.getDest());
+					//	int nuevo = p.getFlow()+actual;
+						//System.out.println("viejo flujo: "+actual+" nuevo flujo: "+nuevo+" destino: "+p.getDest());
+						//flujoNodos.put(p.getDest(), nuevo);
 					}
+					//
 				}
+				
 			}
+
+			//for (int q: flujoNodos.keySet()) {			for (int u: crossing.keySet()) {
+			//if (flujoNodos.getOrDefault(q,Integer.MIN_VALUE) > maxNodeFlow && celulas.containsKey(q) && celulas.get(q).getTipo()==2) {
+			//if (crossing.get(u).getFlow()>maxNodeFlow) {
+			//System.out.println("entre al ciclo");
+			//maxNodeFlow=flujoNodos.getOrDefault(q,Integer.MIN_VALUE);
+			//maxNode=q;
+		
+			//for (int u: crossing.keySet()) {
+				//if (flujoNodos.getOrDefault(q,Integer.MIN_VALUE) > maxNodeFlow && celulas.containsKey(q) && celulas.get(q).getTipo()==2) {
+					//if (crossing.get(u).getFlow()>maxNodeFlow) {
+					//System.out.println("entre al ciclo");
+					//maxNodeFlow=flujoNodos.getOrDefault(q,Integer.MIN_VALUE);
+					//maxNode=q;
+					//DirectedWeightedEdge actual = crossing.getOrDefault(u, new ArrayList<DirectedWeightedEdge>());
+			
 		}	
  		answer[1]=flujo;
 		answer[2]=flujo-maxCrossFlow;
@@ -213,6 +412,7 @@ public class ProblemaP2 {
 	
 	private static void llenarRed(int n, int d, HashMap<Integer, celula> celulas, HashMap<String, Integer> peptidos, DirectedWeightedGraph red) {
 		int adicion = 1;
+		//System.out.println(celulas.keySet());
 		for (int i:celulas.keySet()) {
 			for (int j:celulas.keySet()) {
 				
@@ -236,6 +436,7 @@ public class ProblemaP2 {
 					   
 					    int mensajes = calcularMensajes(celulas.get(i), celulas.get(j), peptidos);
 						red.addEdge(celulaOrigenId, celulaDestinoId, mensajes);
+					    //System.out.println("creo conexion: "+celulaOrigenId+" "+celulaDestinoId+ " peso: "+mensajes);
 					}
 					
 					if (celulaOrigenTipo==2 && celulaDestinoTipo==2){
@@ -250,10 +451,15 @@ public class ProblemaP2 {
 					    if (!exists) {
 							int mensajes = calcularMensajes(celulas.get(i), celulas.get(j), peptidos);
 							
+							//añado eje de ida
 							red.addEdge(celulaOrigenId, celulaDestinoId, mensajes);
+						    //System.out.println("creo conexion: "+celulaOrigenId+" "+celulaDestinoId+ " peso: "+mensajes);
+			            	//añado eje de vuelta con nodo auxiliar
+							//String auxiliary = Integer.toString(celulaOrigenId) + "0" + Integer.toString(celulaDestinoId);
 			            	int auxiliaryId = n+adicion;
 			            	red.addEdge(celulaDestinoId,auxiliaryId,mensajes);
 			            	red.addEdge(auxiliaryId, celulaOrigenId, mensajes);
+						    //System.out.println("creo conexion: "+celulaDestinoId+" "+celulaOrigenId+ " peso: "+mensajes);
 
 			            	adicion++;
 					    }
@@ -268,6 +474,9 @@ public class ProblemaP2 {
 			//Creo super source
 			if (celulaTipo==1) {
 				red.addEdge(0, celulaId, Integer.MAX_VALUE);
+			    //System.out.println("creo conexion: "+0+" "+celulaId+ " peso: "+Integer.MAX_VALUE);
+				//System.out.println("adyacentes a las primeras: "+red.getAdjacents(-1).size());
+				//System.out.println("tamaño red final: "+Integer.toString(red.getSize()));
 			}
 		}
 		
@@ -278,6 +487,7 @@ public class ProblemaP2 {
 			int celulaId = celulas.get(k).getId();
 			if (celulaTipo==3) {
 				red.addEdge(celulaId,t,Integer.MAX_VALUE);
+			    //System.out.println("creo conexion: "+celulaId+" "+t+ " peso: "+Integer.MAX_VALUE);
 
 			}
 		}
@@ -287,9 +497,11 @@ public class ProblemaP2 {
 		int peso = 0;
 		for (Integer peptidoOrigen : origen.getPeptidos()) {
 			if (destino.getPeptidos().contains(peptidoOrigen)) {
+				//System.out.println("coinciden peptidos: "+peptidoOrigen+ "mensajes: "+peso);
 				peso++;
 			}
 		}
+		//System.out.println("mensajes: "+peso);
 		return peso;
 	}
 		
@@ -366,6 +578,8 @@ public class ProblemaP2 {
 		
 		public void addEdge(int source, int dest, int weight) {
 		    adjList.putIfAbsent(source, new ArrayList<>());
+		    //depende de que me responda Tomás sobre la entrada
+
 		    adjList.get(source).add(new DirectedWeightedEdge(dest, weight));
 	    }
 		
