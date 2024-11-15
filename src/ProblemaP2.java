@@ -59,11 +59,14 @@ public class ProblemaP2 {
 					}
 				 }
 			}
+			if (d/n > 0.5) d= (int) Math.round(n*0.7);
 			llenarRed(n, d, celulas, peptidos, red);
 			int [] nodoMetodo2=edmonsKarpNodoMaximoFlujo(red,celulas);
 			int celulaBloqueada=nodoMetodo2[0];
 			int flujoMax=nodoMetodo2[1];
 			int flujoMin=nodoMetodo2[2];
+			//int flujoPush=getPushRelabel(red);
+			//int flujoPush=0;
 			System.out.println(Integer.toString(celulaBloqueada)+" "+Integer.toString(flujoMax)+" "+Integer.toString(flujoMin));
 		}
 	}
@@ -77,7 +80,7 @@ public class ProblemaP2 {
 
 		while(!cola.isEmpty()) {
 			int u = cola.poll();
-			for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+			for (DirectedWeightedEdge edge: residual.getAdjacents(u).values()) {
 				int v = edge.getDest();
 	
 				if(!visitados[v] && (edge.getWeight() - edge.getFlow() > 0)) {
@@ -103,7 +106,7 @@ public class ProblemaP2 {
 	
 		while(!cola.isEmpty()) {
 			int u = cola.poll();
-			for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
+			for (DirectedWeightedEdge edge: residual.getAdjacents(u).values()) {
 				int v = edge.getDest();
 
 				if(!visitados[v] && (edge.getWeight() - edge.getFlow() > 0)) {
@@ -123,15 +126,31 @@ public class ProblemaP2 {
 	private static DirectedWeightedGraph crearResidual(DirectedWeightedGraph red) {
 		DirectedWeightedGraph residual = new DirectedWeightedGraph();
 		for (int nodo: red.getSet()) {
-			for(DirectedWeightedEdge edge : red.getAdjacents(nodo)) {
+			for(DirectedWeightedEdge edge : red.getAdjacents(nodo).values()) {
 				int dest = edge.getDest();
 				residual.addEdge(nodo,dest,edge.getWeight());
 				residual.addEdge(dest, nodo, 0);
+				//System.out.println("añadí "+nodo+" "+dest+" "+edge.getWeight());
+				//System.out.println("añadí "+dest+" "+nodo+" "+0);
+
 			}
 		}
 		return residual;
 	}
 	
+	private static DirectedWeightedGraph crearResidualPush(DirectedWeightedGraph red) {
+		DirectedWeightedGraph residual = new DirectedWeightedGraph();
+		for (int nodo: red.getSet()) {
+			for(DirectedWeightedEdge edge : red.getAdjacents(nodo).values()) {
+				int dest = edge.getDest();
+				residual.addEdge(nodo,dest,edge.getWeight());
+				//System.out.println("añadí "+nodo+" "+dest+" "+edge.getWeight());
+				//System.out.println("añadí "+dest+" "+nodo+" "+0);
+
+			}
+		}
+		return residual;
+	}
 	private static int[] edmonsKarpNodoMaximoFlujo(DirectedWeightedGraph red, HashMap<Integer, celula> celulas ) {
 		int[] answer = new int[3];
 		int maxNode = 0;
@@ -150,11 +169,9 @@ public class ProblemaP2 {
 				int u = parent[v];
 				int capacity = 0;
 				int flow = 0;
-				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
-					if(edge.getDest() == v) {
-						capacity = edge.getWeight();
-						flow = edge.getFlow();					}
-				}
+				DirectedWeightedEdge edge = residual.getEdge(u, v);
+				capacity = edge.getWeight();
+				flow = edge.getFlow();					
 				pathFlow = Math.min(pathFlow, capacity-flow);
 				v=u;
 			}
@@ -162,21 +179,12 @@ public class ProblemaP2 {
 			v = sumidero;
 			while(v!=source) {
 				int u = parent[v];
+				DirectedWeightedEdge edge = residual.getEdge(u,v);
+				edge.setFlow(edge.getFlow()+pathFlow);
 				
-				for (DirectedWeightedEdge edge: residual.getAdjacents(u)) {
-					if(edge.getDest()==v) {
-						edge.setFlow(edge.getFlow()+pathFlow);
-					}
-				}
-				
-				for (DirectedWeightedEdge edge: residual.getAdjacents(v)) {
-					if(edge.getDest()==u) {
-						edge.setFlow(edge.getFlow()-pathFlow);
-					}
-				}
-				
+				DirectedWeightedEdge vedge = residual.getEdge(v, u);
+				vedge.setFlow(vedge.getFlow()-pathFlow);
 				v=u;
-				
 			}
 			
 			flujo += pathFlow;
@@ -187,18 +195,18 @@ public class ProblemaP2 {
 
 			boolean visitados[] = bfsResidual(residual, source, sumidero, parent);
 			for (int o: residual.getSet()) {
-				for (DirectedWeightedEdge p: residual.getAdjacents(o)) {
-					if (visitados[o] && !visitados[p.getDest()]) {
-						crossing.computeIfAbsent(o, k -> new ArrayList<>()).add(p);
-				        int newFlow = crossingFlows.getOrDefault(0, 0) + p.getFlow();
+				for (int p: residual.getSet()) {
+					if (residual.getEdge(o,p)!=null && (visitados[o] && !visitados[p])) {
+						crossing.computeIfAbsent(o, k -> new ArrayList<>()).add(residual.getEdge(o, p));
+				        int newFlow = crossingFlows.getOrDefault(0, 0) + residual.getEdge(o, p).getFlow();
 				        crossingFlows.put(o, newFlow);
 				        if (crossingFlows.getOrDefault(o,Integer.MIN_VALUE)>=maxCrossFlow) {
-				        	if (celulas.containsKey(p.getDest())){
+				        	if (celulas.containsKey(residual.getEdge(o, p).getDest())){
 					        	maxCrossFlow = crossingFlows.getOrDefault(o,Integer.MIN_VALUE);
-					        	int tipo = celulas.get(p.getDest()).getTipo();
-					        	anterior=parent[p.getDest()];
-					        	maxNode = p.getDest();
-					        	if (tipo!=2) maxNode=anterior;
+					        	int tipo = celulas.get(residual.getEdge(o, p).getDest()).getTipo();
+					        	if (tipo!=2) maxNode=parent[residual.getEdge(o, p).getDest()];
+					        	else maxNode = residual.getEdge(o, p).getDest();
+
 				        	}
 				        }
 					}
@@ -228,9 +236,12 @@ public class ProblemaP2 {
 				int celulaOrigenId = celulas.get(i).getId();
 				int celulaDestinoId = celulas.get(j).getId();
 				
-				//double manhattanDist = Math.sqrt((celulaOrigenX-celulaDestinoX)^2 + (celulaOrigenY-celulaDestinoY)^2);
-				int manhattanDist = Math.abs(celulaOrigenX-celulaDestinoX)+Math.abs(celulaOrigenY-celulaDestinoY);
-				if (manhattanDist<=d && manhattanDist!=0) {
+				double euclidean = Math.sqrt((celulaOrigenX-celulaDestinoX)*(celulaOrigenX-celulaDestinoX) + (celulaOrigenY-celulaDestinoY)*(celulaOrigenY-celulaDestinoY));
+				//System.out.println("euclidean dist "+manhattanDist);
+				//int manhattanDist = Math.abs(celulaOrigenX-celulaDestinoX)+Math.abs(celulaOrigenY-celulaDestinoY);
+				//System.out.println("euclidean dist "+manhattanDist+" manhattan "+manhattan);
+
+				if (euclidean<=d && euclidean!=0) {
 				
 					if ((celulaOrigenTipo==1 && celulaDestinoTipo==2) || (celulaOrigenTipo==2 && celulaDestinoTipo==3)){
 					   
@@ -241,12 +252,14 @@ public class ProblemaP2 {
 					if (celulaOrigenTipo==2 && celulaDestinoTipo==2){
 						//verifico que no exista
 						boolean exists = false;
-					    for (DirectedWeightedEdge edge : red.getAdjacents(celulaDestinoId)) {
-					        if (edge.getDest() == celulaOrigenId) {
-					            exists = true;
-					            break;
-					        }
-					    }
+						if (red.containsKey(celulaDestinoId)) {
+						    for (DirectedWeightedEdge edge : red.getAdjacents(celulaDestinoId).values()) {
+						        if (edge.getDest() == celulaOrigenId) {
+						            exists = true;
+						            break;
+						        }
+						    }
+						}
 					    if (!exists) {
 							int mensajes = calcularMensajes(celulas.get(i), celulas.get(j), peptidos);
 							
@@ -292,9 +305,101 @@ public class ProblemaP2 {
 		}
 		return peso;
 	}
-		
 	
+	/*
+	private static boolean push (int node,DirectedWeightedGraph residual,int[] altura, int[] exceso, Queue<Integer> activeNodes) {
+		System.out.println("entré a push");
+		for (DirectedWeightedEdge e: residual.getAdjacents(node).values()) {
+			System.out.println("Altura node "+altura[node]+" altura dest "+altura[e.getDest()]);
+			if((altura [node] > altura[e.getDest()]) && (e.getFlow()!=e.getWeight())){
+				int flow = Math.min(e.getWeight()-e.getFlow(), exceso[node]);
+				exceso[node] -= flow;
+				exceso[e.getDest()] += flow;
+				e.setFlow(e.getFlow()+flow);
+				System.out.println("nuevo exceso: "+e.getDest()+" "+exceso[e.getDest()]);
+				boolean a = true;
+				
+				if (residual.containsKey(e.getDest())) {
+					if (residual.getAdjacents(e.getDest()).containsKey(node)) {			
+						residual.getEdge(e.getDest(), node).setFlow(-flow);
+						a=false;
+					} else {
+						residual.addEdge(e.getDest(), node, 0);
+						residual.getEdge(e.getDest(), node).setFlow(-flow);
+						a=false;
+					}
+				}
+				
+				if (a) {
+					residual.addEdge(e.getDest(), node, 0);
+					residual.getEdge(e.getDest(), node).setFlow(-flow);
+				}
+				if (exceso[e.getDest()] > 0 && !activeNodes.contains(e.getDest())) activeNodes.add(e.getDest());
 
+				return true;
+				}
+			}
+		
+		return false;
+	}
+	
+	private static  void relabel (int node,DirectedWeightedGraph residual,int[] altura, int[] exceso) {
+		int minAltura = Integer.MAX_VALUE;
+		if(residual.containsKey(node)){
+		for (DirectedWeightedEdge e: residual.getAdjacents(node).values()) {
+			if((e.getFlow()!=e.getWeight()) && (altura[e.getDest()]<minAltura)) {
+				minAltura=altura[e.getDest()];
+				altura[node]=minAltura+1;
+				System.out.println(" nueva altura "+altura[node]);
+				if(exceso[e.getDest()] > 0 && e.getDest() != 0 && e.getDest() != residual.getSize()) {
+					activeNodes.add(e.getDest());
+					
+				}
+			}
+		}
+		
+		
+	}
+	
+	private static int getPushRelabel(DirectedWeightedGraph red) {
+		//creo nuevo residual
+		DirectedWeightedGraph residual = crearResidualPush(red);
+		
+		//inicializo altura y exceso
+		int[] altura = new int[residual.getSize()+1];
+		Arrays.fill(altura, 0);
+		int[] exceso = new int[residual.getSize()+1];
+		Arrays.fill(exceso,0);
+		
+		
+		//lleno activeNodes
+		Queue<Integer> activeNodes= new LinkedList<Integer>();
+        
+		//preflow
+		altura[0] = red.getSize()+1;
+		for (DirectedWeightedEdge e: residual.getAdjacents(0).values()) {
+			e.setFlow(e.getWeight());
+			System.out.println("mi flow es: "+e.getFlow());
+			exceso[e.getDest()] += e.getFlow();
+			residual.addEdge(e.getDest(), 0, 0);
+			if (exceso[e.getDest()] > 0) activeNodes.add(e.getDest());
+			
+			}
+        //ciclo
+
+		while (!activeNodes.isEmpty()) {
+			int activeNode = activeNodes.poll();
+			System.out.println("entré a while nodo: "+activeNode);
+			if(!push(activeNode, residual, altura, exceso, activeNodes)) {
+				relabel(activeNode,residual,altura,exceso);
+			}
+		}
+		
+		int maxFlow = exceso[residual.getSize()];
+		return maxFlow;
+	}*/
+	
+	
 	class celula{
 		private int id;
 		private int x;
@@ -359,19 +464,26 @@ public class ProblemaP2 {
 	}
 	
 	public static class DirectedWeightedGraph {
-		private Map<Integer, List<DirectedWeightedEdge>> adjList;
+		private Map<Integer, Map<Integer, DirectedWeightedEdge>> adjList;
 		public DirectedWeightedGraph() {
 			adjList = new HashMap<>();
 		}
 		
 		public void addEdge(int source, int dest, int weight) {
-		    adjList.putIfAbsent(source, new ArrayList<>());
-		    adjList.get(source).add(new DirectedWeightedEdge(dest, weight));
+		    adjList.putIfAbsent(source, new HashMap<Integer, DirectedWeightedEdge>());
+		    adjList.get(source).put(dest, new DirectedWeightedEdge(dest, weight));
 	    }
 		
+		public DirectedWeightedEdge getEdge (int source, int dest) {
+			return adjList.get(source).get(dest);
+		}
 		
-		public List<DirectedWeightedEdge> getAdjacents(int source){
-			return adjList.getOrDefault(source, new ArrayList<>());
+		public Map<Integer, DirectedWeightedEdge> getAdjacents(int source){
+			return adjList.get(source);
+		}
+		
+		public boolean containsKey (int key) {
+			return adjList.containsKey(key);
 		}
 		
 		public int getSize() {
